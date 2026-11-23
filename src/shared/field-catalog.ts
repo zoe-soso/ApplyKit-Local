@@ -1,6 +1,7 @@
 import type {
   DegreeLevel, EndDate, FieldRef, KnownSection, PartialDate, ProfileData, SectionKind,
 } from './types';
+import { LOCAL_EXTRA_FIELDS } from './local-extra-fields';
 import { normalizeLabel } from './normalize';
 
 /**
@@ -74,6 +75,7 @@ export const CATALOG: CatalogSection[] = [
     label: '基础信息',
     repeated: false,
     fields: [
+      ...(LOCAL_EXTRA_FIELDS['personal'] ?? []),
       { field: 'fullName', label: '姓名', valueKind: 'text', aliases: ['姓名', '中文姓名', '真实姓名', '本人姓名', 'full name', 'name', '申请人姓名'] },
       { field: 'englishName', label: '英文名', valueKind: 'text', aliases: ['英文名', '英文姓名', 'english name'] },
       { field: 'email', label: '邮箱', valueKind: 'text', aliases: ['邮箱', '电子邮箱', '电子邮件', '常用邮箱', 'email', 'e-mail'] },
@@ -104,7 +106,7 @@ export const CATALOG: CatalogSection[] = [
       { field: 'birthDate', label: '出生日期', valueKind: 'date', aliases: ['出生日期', '出生日期年龄', '出生日期 (年龄)', '生日', 'birth date', 'date of birth'] },
       { field: 'age', label: '年龄', valueKind: 'number', aliases: ['年龄', '周岁', 'age'] },
       { field: 'currentCity', label: '现居城市', valueKind: 'text', aliases: ['现居城市', '现居地', '现居住地', '当前城市', '所在城市', '所在地', '常住城市', 'current city'] },
-      { field: 'nativePlace', label: '籍贯', valueKind: 'text', aliases: ['籍贯', '生源地', '祖籍', 'native place', 'hometown'] },
+      { field: 'nativePlace', label: '籍贯', valueKind: 'text', aliases: ['籍贯', '祖籍', 'native place', 'hometown'] },
       {
         field: 'englishLevel',
         label: '英语等级',
@@ -142,6 +144,7 @@ export const CATALOG: CatalogSection[] = [
     label: '求职意向',
     repeated: false,
     fields: [
+      ...(LOCAL_EXTRA_FIELDS['preferences'] ?? []),
       { field: 'targetRoles', label: '意向岗位', valueKind: 'stringList', aliases: ['意向岗位', '期望岗位', '求职意向', '目标岗位', '应聘岗位方向'] },
       { field: 'preferredCities', label: '意向城市列表', valueKind: 'stringList', aliases: ['意向城市列表', '多选意向城市'] },
       { field: 'primaryPreferredCity', label: '默认意向城市', valueKind: 'text', aliases: ['意向城市', '期望城市', '期望工作城市', '期望工作地点', '意向工作城市', '意向工作地点'] },
@@ -162,9 +165,10 @@ export const CATALOG: CatalogSection[] = [
     label: '教育经历',
     repeated: true,
     fields: [
+      ...(LOCAL_EXTRA_FIELDS['education'] ?? []),
       { field: 'school', label: '学校', valueKind: 'text', aliases: ['学校', '毕业院校', '就读院校', '学校名称', '院校', 'school', 'university'] },
-      { field: 'department', label: '院系', valueKind: 'text', aliases: ['院系', '学院', '学院名称', '所在院系', 'department'] },
-      { field: 'degreeLevel', label: '学历层级', valueKind: 'enum', aliases: ['学历', '学历层次', '最高学历', '培养层次', 'degree'], enumEquivalents: DEGREE_EQUIVALENTS },
+      { field: 'department', label: '院系', valueKind: 'text', aliases: ['院系', '学院', '学院名称', '所在院系', '所在院系全称', 'department'] },
+      { field: 'degreeLevel', label: '学历层级', valueKind: 'enum', aliases: ['学历', '学历层次', '培养层次', 'degree'], enumEquivalents: DEGREE_EQUIVALENTS },
       { field: 'enrollmentStatus', label: '就读状态', valueKind: 'enum', aliases: ['就读状态', '在读状态', '学籍状态'], enumEquivalents: ENROLLMENT_EQUIVALENTS },
       { field: 'isHighestDegree', label: '是否为最高学历', valueKind: 'boolean', aliases: ['是否为最高学历', '是否最高学历', '最高学历经历'] },
       { field: 'major', label: '专业', valueKind: 'text', aliases: ['专业', '所学专业', '专业名称', 'major'] },
@@ -195,6 +199,7 @@ export const CATALOG: CatalogSection[] = [
     label: '工作经历',
     repeated: true,
     fields: [
+      ...(LOCAL_EXTRA_FIELDS['workExperiences'] ?? []),
       { field: 'company', label: '工作单位', valueKind: 'text', aliases: ['单位', '公司名称', '工作单位', '公司', 'company', '就职公司'] },
       { field: 'department', label: '所在部门', valueKind: 'text', aliases: ['部门', '所在部门', '工作部门'] },
       { field: 'title', label: '职位', valueKind: 'text', aliases: ['职位', '岗位名称', '职位名称', 'title', 'position'] },
@@ -209,6 +214,7 @@ export const CATALOG: CatalogSection[] = [
     label: '实习经历',
     repeated: true,
     fields: [
+      ...(LOCAL_EXTRA_FIELDS['internships'] ?? []),
       { field: 'company', label: '实习单位', valueKind: 'text', aliases: ['单位', '单位名称', '公司名称', '实习公司', '实习单位', '公司', 'company', '就职公司'] },
       { field: 'department', label: '所在部门', valueKind: 'text', aliases: ['部门', '所在部门', '实习部门'] },
       { field: 'title', label: '实习岗位', valueKind: 'text', aliases: ['职位', '实习岗位', '岗位名称', '职位名称', '实习职位', 'title', 'position'] },
@@ -223,6 +229,7 @@ export const CATALOG: CatalogSection[] = [
     label: '项目经历',
     repeated: true,
     fields: [
+      ...(LOCAL_EXTRA_FIELDS['projects'] ?? []),
       { field: 'name', label: '项目名称', valueKind: 'text', aliases: ['项目名称', '项目名', '项目', 'project name'] },
       { field: 'role', label: '项目角色', valueKind: 'text', aliases: ['项目职责', '担任角色', '项目角色', '担任职务', '职务', '职责', '项目中职责', 'role'] },
       { field: 'startDate', label: '项目开始时间', valueKind: 'date', aliases: ['项目开始时间', '开始时间', '起始时间'] },
@@ -250,6 +257,7 @@ export const CATALOG: CatalogSection[] = [
     label: '获奖经历',
     repeated: true,
     fields: [
+      ...(LOCAL_EXTRA_FIELDS['awards'] ?? []),
       { field: 'name', label: '奖项名称', valueKind: 'text', aliases: ['奖项名称', '获奖名称', '荣誉名称', '奖项', '获奖项'] },
       { field: 'date', label: '获奖时间', valueKind: 'date', aliases: ['获奖时间', '获奖日期', '奖项日期'] },
       { field: 'issuer', label: '颁发单位', valueKind: 'text', aliases: ['颁发单位', '颁奖机构', '授予单位'] },
@@ -261,6 +269,7 @@ export const CATALOG: CatalogSection[] = [
     label: '论文/专著',
     repeated: true,
     fields: [
+      ...(LOCAL_EXTRA_FIELDS['publications'] ?? []),
       { field: 'name', label: '名称', valueKind: 'text', aliases: ['名称', '论文名称', '专著名称', '论文题目', '成果名称'] },
       { field: 'publishedAt', label: '发布时间', valueKind: 'date', aliases: ['发布时间', '发表时间', '发表日期', '出版时间'] },
       { field: 'description', label: '成果描述', valueKind: 'longText', aliases: ['成果描述', '论文描述', '论文摘要', '成果说明'] },
@@ -271,6 +280,7 @@ export const CATALOG: CatalogSection[] = [
     label: '证书',
     repeated: true,
     fields: [
+      ...(LOCAL_EXTRA_FIELDS['certificates'] ?? []),
       { field: 'name', label: '证书名称', valueKind: 'text', aliases: ['证书名称', '资质名称', '资格证书'] },
       { field: 'obtainedAt', label: '获得时间', valueKind: 'date', aliases: ['获得时间', '获取时间', '证书日期'] },
       { field: 'description', label: '证书描述', valueKind: 'longText', aliases: ['证书描述', '证书说明', '资质描述'] },

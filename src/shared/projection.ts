@@ -86,8 +86,8 @@ function matchOption(
 }
 
 function dateWithDefaultMonth(date: PartialDate, catalogField: CatalogField): PartialDate {
-  if (date.month !== undefined || catalogField.dateDefault === undefined) return date;
-  return { ...date, month: catalogField.dateDefault.month };
+  // 本地版不猜测缺失的月份。
+  return date;
 }
 
 function dateWithDefaultDay(
@@ -99,14 +99,8 @@ function dateWithDefaultDay(
   if (withMonth.day !== undefined) {
     return { year: withMonth.year, month: withMonth.month, day: withMonth.day };
   }
-  const configured = catalogField.dateDefault;
-  return {
-    year: withMonth.year,
-    month: withMonth.month,
-    // 教育起止日期使用用户指定的 9 月 1 日和 6 月 30 日；其他月精度
-    // 日期在网页强制要求“日”时补为当月 1 日。
-    day: configured && withMonth.month === configured.month ? configured.day : 1,
-  };
+  // 网页强制要求精确到日时，缺失信息留给本人补充。
+  return null;
 }
 
 function projectDatePart(descriptor: FieldDescriptor, value: CatalogValue, catalogField: CatalogField): Projection {
@@ -251,7 +245,7 @@ export function projectValue(
       }
       if (descriptor.datePrecision === 'day') {
         const complete = dateWithDefaultDay(date, catalogField);
-        if (!complete) return { ok: false, reasonCode: 'PRECISION_MISMATCH', message: '网页要求精确到日，但履历缺少月份' };
+        if (!complete) return { ok: false, reasonCode: 'PRECISION_MISMATCH', message: '网页要求精确到日，但履历缺少月份或日期' };
         return {
           ok: true,
           value: `${complete.year}-${String(complete.month).padStart(2, '0')}-${String(complete.day).padStart(2, '0')}`,
@@ -271,7 +265,7 @@ export function projectValue(
         return {
           ok: false,
           reasonCode: 'PRECISION_MISMATCH',
-          message: '网页要求精确到日，但履历缺少月份',
+          message: '网页要求精确到日，但履历缺少月份或日期',
         };
       }
       return { ok: true, value: text };

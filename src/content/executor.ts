@@ -1,3 +1,4 @@
+import {conflictingRecordTargets} from '../shared/record-targets';
 import { fieldFingerprint } from '../shared/fingerprints';
 import { normalizeLabel, valuesEqual } from '../shared/normalize';
 import type { ExecutionOutcome } from '../shared/protocol';
@@ -130,11 +131,12 @@ function resolveCurrentEntry(
 ): ControlEntry | null {
   if (original) {
     const relocated = relocate(original, scan);
-    if (relocated && currentFingerprint(relocated) === action.expectedFingerprint) return relocated;
+    if (relocated && currentFingerprint(relocated) === action.expectedFingerprint && (!original.recordRoot?.isConnected || relocated.recordRoot===original.recordRoot)) return relocated;
   }
   const direct = scan.entries.get(action.fieldId) ?? null;
   if (!direct || currentFingerprint(direct) !== action.expectedFingerprint) return null;
   if (original && direct.descriptor.recordInstanceId !== original.descriptor.recordInstanceId) return null;
+  if(original?.recordRoot && original.recordRoot.isConnected && direct.recordRoot!==original.recordRoot)return null;
   return direct;
 }
 
@@ -244,6 +246,8 @@ async function executeActions(context: ExecutionContext, edits: WeakMap<Element,
   const actions = orderedActions(context.actions);
   // 保留计划时的语义身份。后续每次 rescan 都不再相信 fieldId 的位置含义。
   const plannedEntries = new Map(context.getScan().entries);
+  const blockedRecordTargets=conflictingRecordTargets(actions,id=>plannedEntries.get(id)?.primary);
+  const targetRecordOwners = new WeakMap<Element,string>();
   const generatedDefaults = new Map<string, { value: string; range: Element; revision: number }>();
   const total = actions.length;
   const deadline = Date.now() + context.budgetMs;
@@ -273,6 +277,9 @@ async function executeActions(context: ExecutionContext, edits: WeakMap<Element,
       break;
     }
 
+    if(blockedRecordTargets.has(action.fieldId)){
+      const outcome:ExecutionOutcome={fieldId:action.fieldId,outcome:'pending',reasonCode:'AMBIGUOUS_RECORD',message:'防串写保护：不同项目指向同一网页输入框，未执行这些动作',elapsedMs:0};outcomes.push(outcome);context.onProgress(index+1,total,outcome);continue;
+    }
     const started = Date.now();
     let result: ControlResult = failResult('STALE_PAGE', '找不到目标字段');
     const originalEntry = plannedEntries.get(action.fieldId) ?? null;
@@ -287,6 +294,12 @@ async function executeActions(context: ExecutionContext, edits: WeakMap<Element,
         }
       }
 
+      if(action.source.recordId){
+        const owner=action.source.section+'::'+action.source.recordId;
+        const previous=targetRecordOwners.get(entry.primary);
+        if(previous&&previous!==owner){result=failResult('AMBIGUOUS_RECORD','防串写保护：同一个网页输入框被不同经历重复定位，已停止写入');break;}
+        targetRecordOwners.set(entry.primary,owner);
+      }
       const revalidation = revalidateTarget(entry);
       if (!revalidation.ok) {
         result = revalidation;

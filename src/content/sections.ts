@@ -33,7 +33,7 @@ const SECTION_KEYWORDS: Array<{ section: SectionKind; patterns: RegExp }> = [
   { section: 'certificates', patterns: /(证书|资质|资格认证)/ },
   { section: 'preferences', patterns: /(求职意向|期望|意向岗位|应聘意向)/ },
   { section: 'selfIntroduction', patterns: /(自我介绍|个人简介|自我评价|个人陈述|自我描述|个人描述)/ },
-  { section: 'personal', patterns: /(基本信息|基础信息|个人信息|联系方式|申请人信息)/ },
+  { section: 'personal', patterns: /(基本信息|个人基本信息|基础信息|个人信息|联系方式|申请人信息)/ },
 ];
 
 const DEGREE_KEYWORDS: Array<{ level: DegreeLevel; patterns: RegExp }> = [
@@ -84,10 +84,12 @@ const NON_SECTION_ROOTS = new Set(['main', 'body', 'html', 'article', 'header', 
 const MAX_HEADING_LENGTH = 20;
 
 /** 无语义标签的短分区标题只接受完整词，不把“学校名称”等字段名升级成分区。 */
-const PLAIN_SECTION_TITLE = /^(?:基本信息|基础信息|个人信息|联系方式|教育(?:经历|背景|信息)|实习(?:经历|经验)|工作经历|项目(?:经历|经验)|获奖(?:情况|经历)|荣誉奖项|语言能力|语言技能|论文(?:发表|成果|信息)?|论文\/专著|证书(?:信息)?|资格证书|求职意向|自我评价|自我介绍|校园经历|在校经历|专利(?:成果|信息)?|技能(?:证书)?|其他信息|招聘信息来源|简历附件)$/;
+const PLAIN_SECTION_TITLE = /^(?:基本信息|个人基本信息|基础信息|个人信息|联系方式|教育(?:经历|背景|信息)|实习(?:经历|经验)|工作经历|项目(?:经历|经验|实践)|获奖(?:情况|经历)|荣誉奖项|语言能力|语言技能|论文(?:发表|成果|信息)?|论文\/专著|证书(?:信息)?|资格证书|求职意向|自我评价|自我介绍|校园经历|在校经历|在校实践|在校职务|社会实践|校园实践|专利(?:成果|信息)?|专业技能|技能(?:证书|特长|描述)?|其他信息|招聘信息来源|简历附件)$/;
 
 function eligibleHeading(element: Element): boolean {
   if (isOwnElement(element) || !isVisible(element) || element.closest('nav, a, button, label, [role="tablist"], [role="dialog"]')) return false;
+  // Field captions such as “自我评价” are labels, not nested section headings.
+  if (element.closest('.form-item, .el-form-item, .ant-form-item, .atsx-form-item, .field, [data-field]')) return false;
   if (element.querySelector('input, textarea, select, [role="combobox"], .am-list-item')) return false;
   const text = headingTextOf(element).replace(/[＊*：:]$/u, '').trim();
   return text.length > 0 && text.length <= MAX_HEADING_LENGTH &&

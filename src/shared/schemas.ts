@@ -1,3 +1,4 @@
+import {DIAGNOSTIC_CODES} from './diagnostics';
 import { z } from 'zod';
 
 /** 持久化与交换格式的运行时校验。与 types.ts 的结构合同保持一致。 */
@@ -84,6 +85,18 @@ const listOf = <T extends z.ZodTypeAny>(schema: T, label: string) =>
 
 export const educationSchema = z
   .object({
+    schoolCity: nullableText().optional(),
+    campus: nullableText().optional(),
+    degreeName: nullableText().optional(),
+    className: nullableText().optional(),
+    averageScore: nullableText().optional(),
+    rankingPercent: nullableText().optional(),
+    classSize: nullableText().optional(),
+    majorCourses: nullableText().optional(),
+    secondMajor: nullableText().optional(),
+    studyAbroad: nullableText().optional(),
+    thesisTitle: nullableText().optional(),
+    thesisDescription: nullableText().optional(),
     id: idSchema,
     primary: z.boolean().optional(),
     school: text(200).min(1, '学校不能为空'),
@@ -108,6 +121,10 @@ export const educationSchema = z
 
 export const internshipSchema = z
   .object({
+    employmentType: nullableText().optional(),
+    achievements: nullableText().optional(),
+    tools: nullableText().optional(),
+    supervisor: nullableText().optional(),
     id: idSchema,
     primary: z.boolean().optional(),
     company: text(200).min(1, '公司不能为空'),
@@ -122,6 +139,11 @@ export const internshipSchema = z
 
 export const projectSchema = z
   .object({
+    organization: nullableText().optional(),
+    technology: nullableText().optional(),
+    teamSize: nullableText().optional(),
+    contribution: nullableText().optional(),
+    results: nullableText().optional(),
     id: idSchema,
     primary: z.boolean().optional(),
     name: text(200).min(1, '项目名称不能为空'),
@@ -149,6 +171,10 @@ export const languageSchema = z
 
 export const workExperienceSchema = z
   .object({
+    employmentType: nullableText().optional(),
+    industry: nullableText().optional(),
+    achievements: nullableText().optional(),
+    leavingReason: nullableText().optional(),
     id: idSchema,
     primary: z.boolean().optional(),
     company: text(200).min(1, '公司不能为空'),
@@ -163,6 +189,8 @@ export const workExperienceSchema = z
 
 export const awardSchema = z
   .object({
+    level: nullableText().optional(),
+    rank: nullableText().optional(),
     id: idSchema,
     primary: z.boolean().optional(),
     name: text(300).min(1, '奖项名称不能为空'),
@@ -174,6 +202,10 @@ export const awardSchema = z
 
 export const publicationSchema = z
   .object({
+    publicationType: nullableText().optional(),
+    journal: nullableText().optional(),
+    authorOrder: nullableText().optional(),
+    doi: nullableText().optional(),
     id: idSchema,
     primary: z.boolean().optional(),
     name: text(500).min(1, '论文或专著名称不能为空'),
@@ -184,6 +216,9 @@ export const publicationSchema = z
 
 export const certificateSchema = z
   .object({
+    issuer: nullableText().optional(),
+    certificateNumber: nullableText().optional(),
+    validUntil: nullableText().optional(),
     id: idSchema,
     primary: z.boolean().optional(),
     name: text(300).min(1, '证书名称不能为空'),
@@ -207,6 +242,26 @@ export const profileDataSchema = z
   .object({
     personal: z
       .object({
+    namePinyin: nullableText().optional(),
+    qq: nullableText().optional(),
+    alternatePhone: nullableText().optional(),
+    ethnicity: nullableText().optional(),
+    politicalStatus: nullableText().optional(),
+    maritalStatus: nullableText().optional(),
+    householdType: nullableText().optional(),
+    householdLocation: nullableText().optional(),
+    birthPlace: nullableText().optional(),
+    sourceLocation: nullableText().optional(),
+    address: nullableText().optional(),
+    postalCode: nullableText().optional(),
+    identityType: nullableText().optional(),
+    passportNumber: nullableText().optional(),
+    healthStatus: nullableText().optional(),
+    height: nullableText().optional(),
+    weight: nullableText().optional(),
+    hobbies: nullableText().optional(),
+    linkedin: nullableText().optional(),
+    portfolio: nullableText().optional(),
         fullName: text(100).min(1, '姓名不能为空'),
         englishName: nullableText(100),
         email: email.nullable(),
@@ -229,6 +284,21 @@ export const profileDataSchema = z
       .strict(),
     preferences: z
       .object({
+    employmentType: nullableText().optional(),
+    desiredPosition: nullableText().optional(),
+    expectedAnnualSalary: nullableText().optional(),
+    salaryNegotiable: nullableText().optional(),
+    earliestStartDate: nullableText().optional(),
+    internshipStartDate: nullableText().optional(),
+    internshipEndDate: nullableText().optional(),
+    businessTravel: nullableText().optional(),
+    shiftWork: nullableText().optional(),
+    overtime: nullableText().optional(),
+    locationAdjustment: nullableText().optional(),
+    accommodation: nullableText().optional(),
+    recruitmentSource: nullableText().optional(),
+    referralCode: nullableText().optional(),
+    referrerName: nullableText().optional(),
         targetRoles: z.array(text(100)).max(20),
         preferredCities: z.array(text(100)).max(20),
         availabilityText: nullableText(200),
@@ -397,6 +467,7 @@ export const savedMappingSchema = z
 
 export const fieldResultSchema = z
   .object({
+    diagnosticCode: z.enum(DIAGNOSTIC_CODES).optional(),
     fieldId: z.string().min(1).max(120),
     section: sectionKindSchema,
     source: fieldRefSchema.nullable(),

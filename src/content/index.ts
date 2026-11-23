@@ -11,7 +11,7 @@ import { scanPage, type ScanOutput } from './scanner';
 
 // 编辑器重载扩展后，旧标签页可能仍保留上一版隔离世界标记。
 // 能力变更时提升该值，使下一次一键填写能启动新内容脚本。
-const CONTENT_VERSION = '15';
+const CONTENT_VERSION = '16';
 const MARK = '__applykitContentVersion';
 
 declare global {
@@ -89,6 +89,7 @@ function start(): void {
   });
 
   chrome.runtime.onMessage.addListener((raw: unknown, _sender, sendResponse) => {
+    if (window[MARK] !== CONTENT_VERSION) return false;
     const envelope = raw as { protocolVersion?: number; requestId?: string; type?: string; payload?: unknown };
     if (!envelope || envelope.protocolVersion !== PROTOCOL_VERSION || typeof envelope.requestId !== 'string') {
       return false;
@@ -117,7 +118,10 @@ function start(): void {
 
     switch (command.type) {
       case 'SCAN_PAGE': {
-        if (stale) return fail('STALE_PAGE', '页面已经跳转或刷新，请重新扫描');
+        if (run?.running) return fail('RUNNING', '请先停止上一轮填写');
+        routeKey = buildRouteKey(location.href);
+        stale = false;
+        scan = null;
         run = { runId: command.payload.runId, nonce: command.payload.nonce, cancelled: false, running: false, seq: 0 };
         const output = doScan();
         return ok(output.result);

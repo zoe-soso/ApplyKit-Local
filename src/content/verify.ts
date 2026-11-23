@@ -78,7 +78,8 @@ export function revalidateTarget(entry: ControlEntry): ControlResult {
   if (input.disabled || element.getAttribute('aria-disabled') === 'true' || entry.component?.isDisabled?.(element)) {
     return failResult('REQUIRES_USER_ACTION', '字段已被网页禁用');
   }
-  if (input.readOnly && entry.kind !== 'date-picker') return failResult('REQUIRES_USER_ACTION', '字段是只读的');
+  // Readonly on a select input prevents typing; its own options remain clickable.
+  if (input.readOnly && entry.kind !== 'date-picker' && entry.kind !== 'combobox') return failResult('REQUIRES_USER_ACTION', '字段是只读的');
   return okResult();
 }
 

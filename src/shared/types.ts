@@ -1,3 +1,4 @@
+import type {DiagnosticCode} from './diagnostics';
 /** 全局类型合同。持久化、消息与内容脚本都以本文件为准。 */
 
 export type PartialDate = { year: number; month?: number; day?: number };
@@ -6,6 +7,18 @@ export type DegreeLevel = 'bachelor' | 'master' | 'doctor' | 'associate' | 'othe
 export type Gender = 'male' | 'female' | 'other';
 
 export interface EducationRecord {
+  schoolCity?: string | null;
+  campus?: string | null;
+  degreeName?: string | null;
+  className?: string | null;
+  averageScore?: string | null;
+  rankingPercent?: string | null;
+  classSize?: string | null;
+  majorCourses?: string | null;
+  secondMajor?: string | null;
+  studyAbroad?: string | null;
+  thesisTitle?: string | null;
+  thesisDescription?: string | null;
   id: string;
   /** 多条记录只容纳一条时优先使用；同一分区最多一条。 */
   primary?: boolean;
@@ -30,6 +43,10 @@ export interface EducationRecord {
 }
 
 export interface InternshipRecord {
+  employmentType?: string | null;
+  achievements?: string | null;
+  tools?: string | null;
+  supervisor?: string | null;
   id: string;
   primary?: boolean;
   company: string;
@@ -42,6 +59,11 @@ export interface InternshipRecord {
 }
 
 export interface ProjectRecord {
+  organization?: string | null;
+  technology?: string | null;
+  teamSize?: string | null;
+  contribution?: string | null;
+  results?: string | null;
   id: string;
   primary?: boolean;
   name: string;
@@ -65,6 +87,10 @@ export interface LanguageRecord {
 }
 
 export interface WorkExperienceRecord {
+  employmentType?: string | null;
+  industry?: string | null;
+  achievements?: string | null;
+  leavingReason?: string | null;
   id: string;
   primary?: boolean;
   company: string;
@@ -77,6 +103,8 @@ export interface WorkExperienceRecord {
 }
 
 export interface AwardRecord {
+  level?: string | null;
+  rank?: string | null;
   id: string;
   primary?: boolean;
   name: string;
@@ -86,6 +114,10 @@ export interface AwardRecord {
 }
 
 export interface PublicationRecord {
+  publicationType?: string | null;
+  journal?: string | null;
+  authorOrder?: string | null;
+  doi?: string | null;
   id: string;
   primary?: boolean;
   name: string;
@@ -94,6 +126,9 @@ export interface PublicationRecord {
 }
 
 export interface CertificateRecord {
+  issuer?: string | null;
+  certificateNumber?: string | null;
+  validUntil?: string | null;
   id: string;
   primary?: boolean;
   name: string;
@@ -103,6 +138,26 @@ export interface CertificateRecord {
 
 export interface ProfileData {
   personal: {
+  namePinyin?: string | null;
+  qq?: string | null;
+  alternatePhone?: string | null;
+  ethnicity?: string | null;
+  politicalStatus?: string | null;
+  maritalStatus?: string | null;
+  householdType?: string | null;
+  householdLocation?: string | null;
+  birthPlace?: string | null;
+  sourceLocation?: string | null;
+  address?: string | null;
+  postalCode?: string | null;
+  identityType?: string | null;
+  passportNumber?: string | null;
+  healthStatus?: string | null;
+  height?: string | null;
+  weight?: string | null;
+  hobbies?: string | null;
+  linkedin?: string | null;
+  portfolio?: string | null;
     fullName: string;
     englishName: string | null;
     email: string | null;
@@ -126,6 +181,21 @@ export interface ProfileData {
     emergencyContactRelation?: string | null;
   };
   preferences: {
+  employmentType?: string | null;
+  desiredPosition?: string | null;
+  expectedAnnualSalary?: string | null;
+  salaryNegotiable?: string | null;
+  earliestStartDate?: string | null;
+  internshipStartDate?: string | null;
+  internshipEndDate?: string | null;
+  businessTravel?: string | null;
+  shiftWork?: string | null;
+  overtime?: string | null;
+  locationAdjustment?: string | null;
+  accommodation?: string | null;
+  recruitmentSource?: string | null;
+  referralCode?: string | null;
+  referrerName?: string | null;
     targetRoles: string[];
     preferredCities: string[];
     availabilityText: string | null;
@@ -302,6 +372,7 @@ export interface FillAction {
 }
 
 export interface FieldResult {
+  diagnosticCode?: DiagnosticCode;
   fieldId: string;
   section: SectionKind;
   source: FieldRef | null;

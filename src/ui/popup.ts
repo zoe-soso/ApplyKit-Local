@@ -1,3 +1,5 @@
+import {explainField} from '../shared/diagnostics';
+import type {FieldResult} from '../shared/types';
 import { byId, clear, describeError, el, getState, on, send, type StateView } from './common';
 import { summaryLabels } from './review';
 
@@ -31,7 +33,7 @@ interface PrepareRunOutput {
 }
 
 interface RunSnapshot {
-  report: { id: string; phase: string; fields: Array<{ outcome: string }>; finishedAt: string | null };
+  report: { id: string; phase: string; fields: FieldResult[]; finishedAt: string | null };
   planned: number;
   summary: Record<string, number>;
   notes: string[];
@@ -103,6 +105,8 @@ function renderSummary(snapshot: RunSnapshot): void {
     list.append(el('li', {}, [el('span', { class: `dot dot-${key}` }), `${label}：${count}`]));
   }
   host.append(list);
+  const unresolved=snapshot.report.fields.filter(f=>f.outcome==='pending'||f.outcome==='failed');
+  if(unresolved.length){host.append(el('strong',{text:'未完成字段'}));for(const f of unresolved.slice(0,6))host.append(el('p',{class:'note',text:f.label+'：'+explainField(f).cause}));if(unresolved.length>6)host.append(el('p',{class:'note',text:`另有${unresolved.length-6}项，见完整原因报告。`}))}
   for (const note of snapshot.notes) host.append(el('p', { class: 'note', text: note }));
 
   const link = el('button', { class: 'link', type: 'button', text: '查看详情并处理待处理项' });

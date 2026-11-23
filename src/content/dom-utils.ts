@@ -43,8 +43,11 @@ export function cssEscape(value: string): string {
   return value.replace(/["\\]/g, '\\$&');
 }
 
+const VALIDATION_SELECTOR = '[role="alert"], .el-form-item__error, .ant-form-item-explain, .form-item__error, [class*="error-message"], [class*="errorMessage"], [class*="validate-message"]';
+const INVALID_LABEL = /^(?:必填项未填写|此项必填|该项必填|不能为空|必填|请填写此项|请选择此项)$/;
 function textOf(element: Element | null): string {
   if (!element) return '';
+  if (element.matches(VALIDATION_SELECTOR)) return '';
   const selectDisplay = [
     '[class*="display-value"]',
     '[class*="Display-value"]',
@@ -62,8 +65,10 @@ function textOf(element: Element | null): string {
   clone.querySelectorAll('input, select, textarea, button').forEach((node) => node.remove());
   // 下拉中的已选值是字段内容，不是标签；否则第二轮会把「软件工程」当成字段名。
   clone.querySelectorAll(selectDisplay).forEach((node) => node.remove());
+  clone.querySelectorAll(VALIDATION_SELECTOR).forEach((node) => node.remove());
   // 展示用文本保留页面原样（含全角字符），匹配时再单独做 NFKC 归一化。
-  return collapseWhitespace(clone.textContent ?? '');
+  const text = collapseWhitespace(clone.textContent ?? '');
+  return INVALID_LABEL.test(text) ? '' : text;
 }
 
 export interface LabelResolution {
@@ -111,7 +116,7 @@ export function resolveLabel(element: Element): LabelResolution {
   // 北森 Phoenix 把标题和控件放在同一个 form-item 的两个分支，层级通常超过
   // 通用向上遍历上限；只读取结构化 title 中的明确文本标签。
   const formItem = element.closest('.form-item');
-  const formItemText = textOf(formItem?.querySelector(':scope > .form-item__title .form-item__text') ?? null);
+  const formItemText = textOf(formItem?.querySelector('.form-item__title .form-item__text') ?? null);
   if (formItemText) {
     return { raw: formItemText, normalized: normalizeLabel(formItemText), source: 'nearby' };
   }
@@ -121,6 +126,9 @@ export function resolveLabel(element: Element): LabelResolution {
   if (atsxItemText) {
     return { raw: atsxItemText, normalized: normalizeLabel(atsxItemText), source: 'nearby' };
   }
+  const structuredItem = element.closest('.el-form-item, .ant-form-item');
+  const structuredLabel = textOf(structuredItem?.querySelector('.el-form-item__label, .ant-form-item-label') ?? null);
+  if (structuredLabel) return { raw: structuredLabel, normalized: normalizeLabel(structuredLabel), source: 'nearby' };
   const nearby = findNearbyLabelText(element);
   if (nearby) return { raw: nearby, normalized: normalizeLabel(nearby), source: 'nearby' };
   return { raw: '', normalized: '', source: 'none' };
@@ -154,6 +162,7 @@ function findNearbyLabelText(element: Element): string {
       }
       previous = previous.previousElementSibling;
     }
+    if (current.matches('.form-item, .el-form-item, .ant-form-item, .atsx-form-item, fieldset')) break;
     current = current.parentElement;
   }
   return '';
@@ -190,6 +199,7 @@ export function classifySelectLikeInput(element: Element, label: string): Select
     const className = String(node.className || '');
     if (DATE_LIKE_CONTAINER.test(className)) dateContainer = true;
     if (!container && SELECT_LIKE_CONTAINER.test(className)) container = node;
+    if (node.matches('.form-item, .el-form-item, .ant-form-item, .atsx-form-item, fieldset')) break;
     node = node.parentElement;
   }
   const looksSelectable = container !== null || dateContainer || SELECT_LIKE_PLACEHOLDER.test(placeholder);

@@ -287,6 +287,7 @@ function ruleCandidate(descriptor: FieldDescriptor, rules: SavedMapping[]): Matc
   const rule = applicable[0]!;
   const section = rule.section;
   if (section === 'unknown') return null;
+  if (descriptor.section !== 'unknown' && descriptor.section !== section) return null;
   if (!getCatalogField(section, rule.sourceField)) return null;
   return {
     source: { section, field: rule.sourceField },

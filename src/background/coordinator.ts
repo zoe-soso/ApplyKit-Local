@@ -1,3 +1,4 @@
+import {classifyExecution} from '../shared/diagnostics';
 import {
   makeEnvelope, scanResultSchema, type ExecutionOutcome, type Reply, type ScanResult,
 } from '../shared/protocol';
@@ -370,6 +371,7 @@ function mergeOutcome(report: RunReport, scan: ScanResult, outcome: ExecutionOut
     reasonCode: outcome.reasonCode,
     label: descriptor?.label ?? report.fields[index]?.label ?? outcome.fieldId,
     elapsedMs: outcome.elapsedMs,
+    diagnosticCode: classifyExecution(outcome.message,outcome.reasonCode,descriptor?.label??''),
   };
   if (index >= 0) report.fields[index] = merged;
   else report.fields.push(merged);

@@ -45,7 +45,7 @@ const DECLARATION_PATTERN = /(声明|承诺|同意|授权|隐私|条款|协议|�
  * 敏感信息默认列为待处理，绝不用别的字段代替。后台仅允许用户主动保存、
  * 字段目录显式放行并由站点适配器精确绑定的少数字段继续填写。
  */
-const SENSITIVE_PATTERN = /(身份证|证件号|护照号|港澳|台胞证|社保|公积金|银行卡|银行账|开户行|政治面貌|民族|婚姻状况|健康状况|血型|残疾|宗教|户口|户籍所在地|家庭住址|详细地址|通讯地址|紧急联系|家庭成员|亲属|担保人|密码)/;
+const SENSITIVE_PATTERN = /(身份证|证件号|护照号|港澳|台胞证|社保|公积金|银行卡|银行账|开户行|政治面貌|民族|婚姻状况|健康状况|血型|残疾|宗教|户口|户籍|家庭住址|详细地址|通讯地址|紧急联系|家庭成员|亲属|担保人|密码)/;
 const SKIPPED_INPUT_TYPES = new Set(['password', 'hidden', 'file', 'submit', 'reset', 'button', 'image']);
 
 function inputKind(input: HTMLInputElement): ControlKind | null {
@@ -422,6 +422,9 @@ export function scanPage(options: ScanOptions): ScanOutput {
     const labelInfo = resolveLabel(element);
     const record: RecordContainer | undefined = structure.recordOfControl.get(element);
     const sectionBinding = structure.sectionOfControl.get(element);
+    // A visible unsupported section is a hard boundary, even for old saved mappings.
+    const blockedSection = sectionBinding?.section === 'unknown' &&
+      /校园|在校|社会实践|技能|附件|专利/.test(sectionBinding.headingText);
 
     // 适配器标注的分区优先。
     let section: SectionKind = sectionBinding?.section ?? 'unknown';
@@ -432,6 +435,7 @@ export function scanPage(options: ScanOptions): ScanOutput {
     let recordOrder = record?.order ?? 0;
 
     for (const [root, hint] of hintedSections) {
+      if (blockedSection) continue;
       if (!root.contains(element)) continue;
       section = hint.section;
       sectionInstanceId = `adapter-${hint.section}`;
@@ -468,7 +472,13 @@ export function scanPage(options: ScanOptions): ScanOutput {
     const component = control.component ?? resolveComponent(element, label, { datePickerKind, areaPickerKind });
     const datePrecision = component?.datePrecision ?? null;
     const supportedDatePicker = component?.kind === 'date-picker';
-    const kind: ControlKind = isDeclaration || (selectLike === 'date-picker' && !supportedDatePicker)
+    const phonePrefix = /^(?:手机号|手机号码|联系电话|电话|手机)$/.test(normalized) &&
+      (control.kind === 'combobox' || selectLike === 'custom-select' || control.kind === 'select') &&
+      (/^\+\d{1,4}$/.test((element as HTMLInputElement).value?.trim() ?? '') ||
+       /^\+\d{1,4}$/.test(displayedSelectValue(element) ||
+         (element instanceof HTMLSelectElement ? element.selectedOptions[0]?.textContent?.trim() ?? '' : '')) ||
+       /country.?code|dial.?code|phone.?prefix/i.test(element.getAttribute('name') ?? ''));
+    const kind: ControlKind = blockedSection || phonePrefix || isDeclaration || (selectLike === 'date-picker' && !supportedDatePicker)
       ? 'unsupported'
       : supportedDatePicker
         ? 'date-picker'
@@ -476,7 +486,10 @@ export function scanPage(options: ScanOptions): ScanOutput {
         ? 'combobox'
         : control.kind;
 
-    const unsupportedReason = isDeclaration
+    const unsupportedReason = blockedSection
+      ? '该分区尚未适配，禁止从项目经历或自我评价跨区取值，请手动填写'
+      : phonePrefix ? '这是电话国家区号选择器，不是手机号码输入框，请手动确认区号'
+      : isDeclaration
       ? '声明与授权类勾选需要你自己确认'
       : selectLike === 'date-picker' && !supportedDatePicker
         ? '这是网站自定义的日期选择器，扩展不会去点它的日历，请手动选择'
@@ -509,10 +522,11 @@ export function scanPage(options: ScanOptions): ScanOutput {
       controlKind: kind,
       required: element.hasAttribute('required') || element.getAttribute('aria-required') === 'true' ||
         Boolean(element.closest('.form-item')?.querySelector('.form-item__required')) ||
-        Boolean(element.closest('.atsx-form-item')?.querySelector('.atsx-form-item-required')),
+        Boolean(element.closest('.atsx-form-item')?.querySelector('.atsx-form-item-required')) ||
+        Boolean(element.closest('.el-form-item.is-required, .ant-form-item')?.querySelector('.el-form-item__label, .ant-form-item-required')),
       disabled: (element as HTMLInputElement).disabled === true || element.getAttribute('aria-disabled') === 'true' ||
         (component?.isDisabled?.(element) ?? false),
-      readOnly: supportedDatePicker ? false : (element as HTMLInputElement).readOnly === true,
+      readOnly: supportedDatePicker || kind === 'combobox' ? false : (element as HTMLInputElement).readOnly === true,
       visible: isVisible(element) || (supportedDatePicker && Boolean(
         element.closest('.atsx-date-picker') && isVisible(element.closest('.atsx-date-picker')!),
       )) || ((kind === 'checkbox' || kind === 'radio') && Boolean(
@@ -527,7 +541,7 @@ export function scanPage(options: ScanOptions): ScanOutput {
       datePresentValue: datePickerKind === 'feishu-period-month' ? '至今' : null,
       degreeHint: (degreeHint as FieldDescriptor['degreeHint']) ?? null,
       recordIdentityHint: null,
-      unsupportedReason: kind === 'unsupported' || sensitive || (locked && !supportedDatePicker) ? unsupportedReason : null,
+      unsupportedReason: kind === 'unsupported' || sensitive || (locked && !supportedDatePicker && kind !== 'combobox') ? unsupportedReason : null,
       sensitive,
     };
 

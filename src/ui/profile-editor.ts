@@ -1,3 +1,5 @@
+import { LOCAL_EXTRA_FIELDS } from '../shared/local-extra-fields';
+import { readChineseProfile } from '../shared/chinese-profile';
 import { profileDataSchema, formatIssues, parseImportText } from '../shared/schemas';
 import { rangeIsValid, isPresent, formatEndDate, formatPartialDate } from '../shared/dates';
 import type { EndDate, PartialDate, ProfileData, ProfileFile } from '../shared/types';
@@ -171,6 +173,11 @@ function newId(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function extraInputs(section: string, record: object): HTMLElement[] {
+  const values=record as Record<string,unknown>;
+  return (LOCAL_EXTRA_FIELDS[section] ?? []).map(f => labelled(f.label + (f.requiresConfirmation ? '（仅手动确认）' : ''), textInput(typeof values[f.field]==='string' ? values[f.field] as string : null,v=>{values[f.field]=v})));
+}
+
 function renderEditor(host: HTMLElement, state: StateView, rerender: () => void): void {
   const data = draft!;
   clear(host);
@@ -205,7 +212,7 @@ function renderEditor(host: HTMLElement, state: StateView, rerender: () => void)
   personal.append(labelled('籍贯', textInput(data.personal.nativePlace ?? null, (v) => (data.personal.nativePlace = v))));
   personal.append(labelled('国籍', textInput(data.personal.nationality ?? null, (v) => (data.personal.nationality = v))));
   personal.append(labelled('微信号', textInput(data.personal.wechat ?? null, (v) => (data.personal.wechat = v))));
-  personal.append(labelled('证件号码（敏感，仅精确适配站点使用）', textInput(
+  personal.append(labelled('证件号码（敏感，仅精确适配站点使用；可留空）', textInput(
     data.personal.identityNumber ?? null,
     (v) => (data.personal.identityNumber = v),
   )));
@@ -223,6 +230,7 @@ function renderEditor(host: HTMLElement, state: StateView, rerender: () => void)
   )));
   personal.append(labelled('个人主页', textInput(data.personal.homepage, (v) => (data.personal.homepage = v))));
   personal.append(labelled('GitHub', textInput(data.personal.github, (v) => (data.personal.github = v))));
+  personal.append(...extraInputs('personal',data.personal));
   host.append(personal);
 
   const preferences = el('section', { class: 'card' }, [el('h3', { text: '求职意向' })]);
@@ -267,6 +275,7 @@ function renderEditor(host: HTMLElement, state: StateView, rerender: () => void)
     data.preferences.acceptsRelocation = relocation.value === '' ? null : relocation.value === 'true';
   });
   preferences.append(labelled('是否接受异地', relocation));
+  preferences.append(...extraInputs('preferences',data.preferences));
   host.append(preferences);
 
   host.append(
@@ -280,6 +289,8 @@ function renderEditor(host: HTMLElement, state: StateView, rerender: () => void)
           startDate: null, endDate: null, description: null,
         }),
         fields: (record) => [
+          ...extraInputs('workExperiences',record),
+          ...extraInputs('education',record),
           labelled('公司', textInput(record['company'] as string, (v) => (record['company'] = v ?? ''))),
           labelled('部门', textInput(record['department'] as string | null, (v) => (record['department'] = v))),
           labelled('职位', textInput(record['title'] as string | null, (v) => (record['title'] = v))),
@@ -362,6 +373,7 @@ function renderEditor(host: HTMLElement, state: StateView, rerender: () => void)
           startDate: null, endDate: null, description: null,
         }),
         fields: (record) => [
+          ...extraInputs('internships',record),
           labelled('公司', textInput(record['company'] as string, (v) => (record['company'] = v ?? ''))),
           labelled('部门', textInput(record['department'] as string | null, (v) => (record['department'] = v))),
           labelled('职位', textInput(record['title'] as string | null, (v) => (record['title'] = v))),
@@ -383,6 +395,7 @@ function renderEditor(host: HTMLElement, state: StateView, rerender: () => void)
         titleOf: (record) => String(record['name'] ?? '未命名'),
         blank: () => ({ id: newId('project'), name: '', role: null, startDate: null, endDate: null, url: null, description: null }),
         fields: (record) => [
+          ...extraInputs('projects',record),
           labelled('项目名称', textInput(record['name'] as string, (v) => (record['name'] = v ?? ''))),
           labelled('角色', textInput(record['role'] as string | null, (v) => (record['role'] = v))),
           dateEditor('开始时间', record['startDate'] as PartialDate | null, (v) => (record['startDate'] = v)),
@@ -424,6 +437,7 @@ function renderEditor(host: HTMLElement, state: StateView, rerender: () => void)
         titleOf: (record) => String(record['name'] ?? '未命名'),
         blank: () => ({ id: newId('award'), name: '', date: null, issuer: null, description: null }),
         fields: (record) => [
+          ...extraInputs('awards',record),
           labelled('奖项名称', textInput(record['name'] as string, (v) => (record['name'] = v ?? ''))),
           dateEditor('获奖时间', record['date'] as PartialDate | null, (v) => (record['date'] = v)),
           labelled('颁发单位', textInput(record['issuer'] as string | null, (v) => (record['issuer'] = v))),
@@ -442,6 +456,7 @@ function renderEditor(host: HTMLElement, state: StateView, rerender: () => void)
         titleOf: (record) => String(record['name'] ?? '未命名'),
         blank: () => ({ id: newId('publication'), name: '', publishedAt: null, description: null }),
         fields: (record) => [
+          ...extraInputs('publications',record),
           labelled('名称', textInput(record['name'] as string, (v) => (record['name'] = v ?? ''))),
           dateEditor('发布时间', record['publishedAt'] as PartialDate | null, (v) => (record['publishedAt'] = v)),
           labelled('成果描述', textArea(record['description'] as string | null, (v) => (record['description'] = v))),
@@ -459,6 +474,7 @@ function renderEditor(host: HTMLElement, state: StateView, rerender: () => void)
         titleOf: (record) => String(record['name'] ?? '未命名'),
         blank: () => ({ id: newId('certificate'), name: '', obtainedAt: null, description: null }),
         fields: (record) => [
+          ...extraInputs('certificates',record),
           labelled('证书名称', textInput(record['name'] as string, (v) => (record['name'] = v ?? ''))),
           dateEditor('获得时间', record['obtainedAt'] as PartialDate | null, (v) => (record['obtainedAt'] = v)),
           labelled('证书描述', textArea(record['description'] as string | null, (v) => (record['description'] = v))),
@@ -546,7 +562,7 @@ export function renderProfiles(state: StateView, reload: () => void): void {
 
   const importCard = el('section', { class: 'card' }, [
     el('h3', { text: '导入履历文件' }),
-    el('p', { class: 'muted', text: '只接受 kind 为 applykit-profile 的文件。投递记录 CSV 与完整备份有各自的入口。' }),
+    el('p', { class: 'muted', text: '支持本地网申中文模板及 ApplyKit 履历 JSON。选择文件后先校验、预览，再确认导入；全程不联网。' }),
   ]);
   const fileInput = el('input', { type: 'file', accept: '.json,application/json', id: 'profile-file' });
   const importButton = el('button', { type: 'button', class: 'primary', text: '校验并导入' });
@@ -560,12 +576,12 @@ export function renderProfiles(state: StateView, reload: () => void): void {
     }
     void importProfileFile(file, state, preview, reload);
   });
-  importCard.append(fileInput, importButton, preview);
+  importCard.append(el('a',{href:'个人资料模板.json',download:'个人资料模板.json',class:'link',text:'下载空白中文模板（先自行填写）'}),fileInput, importButton, preview);
   host.append(importCard);
 
   const list = el('section', { class: 'card' }, [el('h3', { text: `已保存的版本（${state.profiles.length}）` })]);
   if (state.profiles.length === 0) {
-    list.append(el('p', { class: 'empty', text: '还没有履历。请先导入 fixtures/profile.demo.json。' }));
+    list.append(el('p', { class: 'empty', text: '还没有履历。请下载中文模板，在本机填好后导入；也可先用交付包内的虚构演示资料测试。' }));
   }
   for (const profile of state.profiles) {
     const active = profile.profileVersionId === state.activeProfileVersionId;
@@ -631,7 +647,8 @@ function sourceLabel(profile: ProfileFile): string {
 
 async function importProfileFile(file: File, state: StateView, preview: HTMLElement, reload: () => void): Promise<void> {
   clear(preview);
-  const raw = await file.text();
+  let raw = await file.text();
+  try { const converted=readChineseProfile(raw); if(converted) raw=JSON.stringify(converted); } catch(error) { preview.append(el('p',{class:'error',text:describeError(error)}));return; }
   const parsed = parseImportText(raw, 'applykit-profile');
   if (!parsed.ok) {
     preview.append(el('p', { class: 'error', text: '文件未通过校验，已有数据没有改变：' }));
@@ -642,6 +659,8 @@ async function importProfileFile(file: File, state: StateView, preview: HTMLElem
   preview.append(
     el('div', { class: 'card' }, [
       el('h4', { text: '导入预览' }),
+      el('p', {class:'warn',text:'填写进招聘网页后，网站可能立即保存。请先确认当前网址及资料版本。'}),
+      profile.source.note ? el('p',{class:'hint',text:profile.source.note}) : null,
       el('p', { text: `名称：${profile.name}` }),
       el('p', { text: `版本：${profile.profileVersionId} · 来源：${sourceLabel(profile)}` }),
       el('p', { text: `姓名：${profile.data.personal.fullName} · 教育 ${profile.data.education.length} 条 · 工作 ${profile.data.workExperiences?.length ?? 0} 条 · 实习 ${profile.data.internships.length} 条 · 项目 ${profile.data.projects.length} 条 · 奖项 ${profile.data.awards?.length ?? 0} 条` }),

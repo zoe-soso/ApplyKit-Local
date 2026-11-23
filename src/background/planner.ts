@@ -1,3 +1,4 @@
+import type {DiagnosticCode} from '../shared/diagnostics';
 import { getCatalogField, getSection, isRepeatedSection, readFieldValue } from '../shared/field-catalog';
 import { bindRecords, matchField, type MatchContext, type RecordInstance, type RecordSummary } from '../shared/matching';
 import { projectValue } from '../shared/projection';
@@ -57,6 +58,7 @@ function resultFor(
   outcome: FieldResult['outcome'],
   reasonCode: FieldResult['reasonCode'],
   source: FieldRef | null = null,
+  diagnosticCode?: DiagnosticCode,
 ): FieldResult {
   return {
     fieldId: descriptor.fieldId,
@@ -66,6 +68,7 @@ function resultFor(
     reasonCode,
     label: descriptor.label,
     elapsedMs: 0,
+    ...(diagnosticCode ? {diagnosticCode} : {}),
   };
 }
 
@@ -87,7 +90,8 @@ export function planRun(options: PlanOptions): PlanResult {
         identityHint: instance.identityHint,
         order: instance.order,
       }));
-    if (instances.length === 0) continue;
+    if(instances.length===0){if(section==='projects'&&data.projects.length&&scan.descriptors.some(d=>d.section==='projects'))recordBindingNotes.push(`项目经历：资料有${data.projects.length}条，但未识别到独立项目栏；请展开/新增独立项目栏，不能拼进一个格子。`);continue;}
+    if(section==='projects'&&data.projects.length>instances.length)recordBindingNotes.push(`项目经历：资料${data.projects.length}条，网页只识别${instances.length}组；未容纳的项目不会被合并，请新增独立栏位再扫描。`);
     const summaries = recordSummaries(data, section);
     const defaultRecordId = summaries.find((record) => record.primary)?.id;
     const bound = bindRecords(instances, summaries, {
@@ -140,7 +144,7 @@ export function planRun(options: PlanOptions): PlanResult {
     if (options.onlyFieldIds && !options.onlyFieldIds.has(descriptor.fieldId)) continue;
 
     if (descriptor.controlKind === 'unsupported') {
-      results.push(resultFor(descriptor, 'pending', 'UNSUPPORTED_WIDGET'));
+      results.push(resultFor(descriptor, 'pending', 'UNSUPPORTED_WIDGET', null, descriptor.unsupportedReason?.startsWith('该分区') ? 'SECTION_NOT_SUPPORTED' : descriptor.unsupportedReason?.startsWith('这是电话国家区号') ? 'PHONE_PREFIX_MANUAL' : undefined));
       continue;
     }
     if (descriptor.sensitive) {
@@ -149,18 +153,18 @@ export function planRun(options: PlanOptions): PlanResult {
       const explicit = adapterBindings.get(descriptor.fieldId);
       const allowed = explicit ? getCatalogField(explicit.section, explicit.field)?.sensitiveAutofill === true : false;
       if (!allowed) {
-        results.push(resultFor(descriptor, 'pending', 'REQUIRES_USER_ACTION'));
+        results.push(resultFor(descriptor, 'pending', 'REQUIRES_USER_ACTION',null,'SENSITIVE_CONFIRMATION'));
         continue;
       }
     }
     if (descriptor.disabled || descriptor.readOnly || !descriptor.visible) {
-      results.push(resultFor(descriptor, 'pending', 'REQUIRES_USER_ACTION'));
+      results.push(resultFor(descriptor, 'pending', 'REQUIRES_USER_ACTION',null,descriptor.disabled?'CONTROL_DISABLED':descriptor.readOnly?'CONTROL_READONLY':'CONTROL_HIDDEN'));
       continue;
     }
 
     const decision = matchField(descriptor, context);
     if (decision.kind === 'rejected') {
-      results.push(resultFor(descriptor, 'pending', decision.reasonCode));
+      results.push(resultFor(descriptor, 'pending', decision.reasonCode,null,decision.reasonCode==='AMBIGUOUS_RECORD'&&!descriptor.recordInstanceId?'RECORD_CONTAINER_MISSING':undefined));
       continue;
     }
     if (descriptor.sensitive) {

@@ -1,3 +1,4 @@
+import {buildDiagnosticReport,explainField} from '../shared/diagnostics';
 import { CATALOG, describeFieldRef, getSection } from '../shared/field-catalog';
 import type { FieldRef, FieldResult, ProfileFile, ReasonCode, RunReport } from '../shared/types';
 import { byId, clear, describeError, el, on, send, toast, type StateView } from './common';
@@ -23,7 +24,7 @@ export const reasonLabels: Record<ReasonCode, string> = {
   AMBIGUOUS_RECORD: '无法确定对应哪一段经历',
   AMBIGUOUS_OPTION: '找不到唯一对应的选项',
   UNSUPPORTED_WIDGET: '这种控件需要手动处理',
-  PRECISION_MISMATCH: '日期精度不足，无法按已配置的默认值补齐',
+  PRECISION_MISMATCH: '日期精度不足，需要本人补充',
   TEXT_TOO_LONG: '内容超过网页字数限制',
   REQUIRES_USER_ACTION: '需要你自己确认或操作',
   STALE_PAGE: '页面结构已变化',
@@ -109,10 +110,13 @@ function fieldRow(
   ]);
   row.append(head);
 
-  const reasonText = descriptor?.unsupportedReason ?? reasonLabels[field.reasonCode] ?? field.reasonCode;
-  row.append(el('div', { class: 'field-reason', text: reasonText }));
+  const explanation=explainField(field,descriptor);
+  const reasonText = field.diagnosticCode ? explanation.cause : descriptor?.unsupportedReason ?? explanation.cause;
+  row.append(el('div', { class: 'field-reason', text: '原因：'+reasonText }));
+  if(['pending','failed','preserved'].includes(field.outcome))row.append(el('p',{class:'field-next-step',text:'建议：'+explanation.nextStep}));
+  if(descriptor?.recordInstanceId){const ids=[...new Set(snapshot.descriptors.filter(x=>x.section===descriptor.section&&x.recordInstanceId).map(x=>x.recordInstanceId))];row.append(el('small',{class:'field-meta',text:`网页${sectionLabel}第${ids.indexOf(descriptor.recordInstanceId)+1}组`}));}
   if (field.source && profile) {
-    row.append(el('div', { class: 'field-source', text: `源字段：${describeFieldRef(profile.data, field.source)}` }));
+    row.append(el('div', { class: 'field-source', text: `${field.reasonCode === 'FILLED_VERIFIED' ? '插件写入' : field.reasonCode === 'VALUE_ALREADY_EQUAL' ? '原值相同' : field.reasonCode === 'EXISTING_VALUE' ? '保留原值；拟用来源' : '拟用来源'}：${describeFieldRef(profile.data, field.source)}` }));
   }
 
   const actions = el('div', { class: 'field-actions' });
@@ -306,6 +310,23 @@ export async function renderReview(runId: string, state: StateView, reload: () =
       }),
     ]),
   );
+
+  const diagnostic=buildDiagnosticReport(report,snapshot.descriptors);
+  const diagnosis=el('section',{class:'card diagnostic-summary'},[
+    el('h3',{text:'未完成字段与原因报告'}),
+    el('p',{text:`本轮识别 ${total} 项；待处理 ${snapshot.summary.pending??0} 项，填写失败 ${snapshot.summary.failed??0} 项，保留网页原值 ${snapshot.summary.preserved??0} 项。`}),
+    el('p',{class:'muted',text:'下方列出实际字段名称、原因与处理建议。导出不包含填写值、简历、网页HTML、选项及登录网址。'}),
+  ]);
+  if(!diagnostic.fields.length)diagnosis.append(el('p',{text:'本轮没有待处理、失败或保留原值的字段。'}));
+  else {
+    const items=el('ul',{class:'diagnostic-items'});
+    for(const item of diagnostic.fields)items.append(el('li',{text:`${item.fieldName}${item.recordGroup?' · 经历组'+item.recordGroup:''}：${item.cause}；${item.nextStep}`}));
+    diagnosis.append(items);
+  }
+  const preview=el('details',{},[el('summary',{text:'预览将导出的诊断（仅结构信息）'}),el('pre',{class:'diagnostic-preview',text:JSON.stringify(diagnostic,null,2)})]);
+  const exportButton=el('button',{id:'btn-export-diagnostics',class:'ghost',type:'button',text:'导出脱敏诊断 JSON'});
+  on(exportButton,'click',()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(diagnostic,null,2)],{type:'application/json'}));const link=el('a',{href:url,download:'网申未完成字段诊断.json'});document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+  diagnosis.append(exportButton,preview);host.append(diagnosis);
 
   if (report.phase === 'planned') {
     host.append(

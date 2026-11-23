@@ -13,12 +13,17 @@ const SECTION_NAMES = new Map<string, SectionKind>([
   ['求职意向', 'preferences'],
   ['教育经历', 'education'],
   ['实习经历', 'internships'],
-  ['在校实践', 'projects'],
+  ['个人基本信息', 'personal'],
+  ['教育背景', 'education'],
+  ['项目经历', 'projects'],
+  ['项目经验', 'projects'],
+  ['项目实践', 'projects'],
+  ['工作经历', 'workExperiences'],
   ['获奖情况', 'awards'],
   ['论文/专著', 'publications'],
   ['证书', 'certificates'],
 ]);
-const REPEATED = new Set<SectionKind>(['education', 'internships', 'projects', 'awards', 'publications', 'certificates']);
+const REPEATED = new Set<SectionKind>(['education', 'workExperiences', 'internships', 'projects', 'awards', 'publications', 'certificates']);
 
 function sectionRoots(document: Document): Array<{ root: Element; section: SectionKind }> {
   const roots: Array<{ root: Element; section: SectionKind }> = [];
@@ -40,6 +45,13 @@ function commonAncestor(elements: Element[]): Element | null {
 }
 
 function recordRoots(sectionRoot: Element): Element[] {
+  // 每条经历以自己的名称字段为锚点，不能把包住两条记录的公共wrapper当成一条。
+  const identityLabels=/^(?:学校|学校名称|毕业院校|就读院校|公司|公司名称|实习单位|实践名称|项目名称|项目名|获奖项|奖项名称|论文名称|专著名称|名称|证书名称)$/;
+  const identities=[...sectionRoot.querySelectorAll('.form-item')].filter(item=>identityLabels.test(normalizeLabel(item.querySelector('.form-item__text')?.textContent??''))&&item.querySelector('input,textarea,select'));
+  if(identities.length){
+    const roots=identities.map(identity=>{let root:Element=identity;while(root.parentElement&&root.parentElement!==sectionRoot){const parent=root.parentElement;if(identities.filter(x=>parent.contains(x)).length!==1)break;root=parent;}return root;});
+    if(new Set(roots).size===identities.length)return roots;
+  }
   const body = [...sectionRoot.children].find((child) => child.querySelector('input, textarea, select'));
   if (!body) return [];
 
@@ -80,7 +92,7 @@ const BINDINGS = new Map<string, FieldBinding>([
   ['是否接受工作城市调剂', { section: 'preferences', field: 'acceptsRelocation' }],
   ['国籍/地区', { section: 'personal', field: 'nationality' }],
   ['籍贯', { section: 'personal', field: 'nativePlace' }],
-  ['生源地', { section: 'personal', field: 'nativePlace' }],
+  ['生源地', { section: 'personal', field: 'sourceLocation' }],
   ['现居住地', { section: 'personal', field: 'currentCity' }],
   ['学习形式', { section: 'personal', field: 'highestEducationType' }],
   ['毕业时间', { section: 'personal', field: 'highestEducationEndDate' }],
@@ -98,6 +110,7 @@ const BINDINGS = new Map<string, FieldBinding>([
   ['与紧急联系人关系', { section: 'personal', field: 'emergencyContactRelation' }],
   ['紧急联系人关系', { section: 'personal', field: 'emergencyContactRelation' }],
   ['学院名称', { section: 'education', field: 'department' }],
+  ['所在院系全称', { section: 'education', field: 'department' }],
   ['是否为最高学历', { section: 'education', field: 'isHighestDegree' }],
   ['学历类型', { section: 'education', field: 'educationType' }],
   ['专业排名', { section: 'education', field: 'majorRanking' }],
