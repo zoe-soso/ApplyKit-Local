@@ -61,9 +61,9 @@ const masterEnd: FieldRef = { section: 'education', recordId: 'edu-demo-master',
 const masterStart: FieldRef = { section: 'education', recordId: 'edu-demo-master', field: 'startDate' };
 
 describe('U02 日期默认值与精度', () => {
-  it('只精确到月的毕业日期按约定补为 6 月 30 日', () => {
+  it('只精确到月的毕业日期不会猜测日', () => {
     const result = project(masterEnd, descriptor('毕业时间', 'date'));
-    expect(result).toEqual({ ok: true, value: '2027-06-30' });
+    expect(result).toMatchObject({ ok: false, reasonCode:'PRECISION_MISMATCH' });
   });
 
   it('月份控件按 yyyy-mm 写入', () => {
@@ -85,7 +85,7 @@ describe('U02 日期默认值与精度', () => {
     expect(result).toEqual({ ok: true, value: '2024-09' });
   });
 
-  it('教育开始时间只有年份时按约定补为 9 月', () => {
+  it('教育开始时间只有年份时留待补月份', () => {
     const yearOnly = structuredClone(data);
     yearOnly.education[0]!.startDate = { year: 2024 };
     const field = getCatalogField('education', 'startDate')!;
@@ -93,10 +93,10 @@ describe('U02 日期默认值与精度', () => {
     const result = projectValue(value, descriptor('入学时间', 'select', [{ label: '9月', value: '9' }], {
       datePart: { edge: 'start', unit: 'month' },
     }), field);
-    expect(result).toEqual({ ok: true, value: '9' });
+    expect(result).toMatchObject({ ok: false, reasonCode:'PRECISION_MISMATCH' });
   });
 
-  it('教育起止日期只有年份时按约定补成完整日期', () => {
+  it('教育起止日期只有年份时不会编造完整日期', () => {
     const yearOnly = structuredClone(data);
     yearOnly.education[0]!.startDate = { year: 2024 };
     yearOnly.education[0]!.endDate = { year: 2027 };
@@ -106,12 +106,12 @@ describe('U02 日期默认值与精度', () => {
       readFieldValue(yearOnly, masterStart),
       descriptor('入学日期', 'date'),
       startField,
-    )).toEqual({ ok: true, value: '2024-09-01' });
+    )).toMatchObject({ ok: false, reasonCode:'PRECISION_MISMATCH' });
     expect(projectValue(
       readFieldValue(yearOnly, masterEnd),
       descriptor('毕业日期', 'date'),
       endField,
-    )).toEqual({ ok: true, value: '2027-06-30' });
+    )).toMatchObject({ ok: false, reasonCode:'PRECISION_MISMATCH' });
   });
 
   it('「至今」不会被替换成今天，也不能写进日期控件', () => {
@@ -270,7 +270,7 @@ describe('多值、布尔与长度限制', () => {
     expect(result).toEqual({ ok: true, value: '2002-04' });
   });
 
-  it('完整日期选择器保留已有日，其他月精度日期按约定补为 1 日', () => {
+  it('完整日期选择器保留已有日，缺少日的日期留待补充', () => {
     const birth = project(
       { section: 'personal', field: 'birthDate' },
       descriptor('出生日期', 'date-picker', [], { datePrecision: 'day' }),
@@ -281,7 +281,7 @@ describe('多值、布尔与长度限制', () => {
       { section: 'awards', recordId: 'award-demo-001', field: 'date' },
       descriptor('获奖时间', 'date-picker', [], { datePrecision: 'day' }),
     );
-    expect(award).toEqual({ ok: true, value: '2025-11-01' });
+    expect(award).toMatchObject({ok:false,reasonCode:'PRECISION_MISMATCH'});
   });
 
   it('只要求年份的选择器不虚构月份', () => {

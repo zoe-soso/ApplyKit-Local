@@ -22,6 +22,7 @@ export async function launchExtension(userDataDir: string): Promise<ExtensionFix
   }
   const context = await chromium.launchPersistentContext(userDataDir, {
     channel: 'chromium',
+    ...(process.env.APPLYKIT_CHROMIUM_PATH ? {executablePath:process.env.APPLYKIT_CHROMIUM_PATH} : {}),
     args: [
       `--disable-extensions-except=${TEST_DIST}`,
       `--load-extension=${TEST_DIST}`,

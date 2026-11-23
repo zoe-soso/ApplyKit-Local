@@ -1,5 +1,11 @@
 # 变更记录
 
+## 中文增强版 0.1.3
+
+本版基于 DeepestWind/ApplyKit 固定提交修改，新增中文资料导入、日期精度保护、经历与分区隔离及可解释诊断。完整改动见 [LOCAL_CHANGES.md](LOCAL_CHANGES.md)，发布摘要见 [版本说明](docs/RELEASE_v0.1.3.md)，2026-11-23回归结果见 [验收记录](docs/LOCAL_ACCEPTANCE.md)。
+
+以下保留上游历史记录，其中版本与测试数量不代表当前增强版。
+
 本项目的重要变更记录在此文件中。版本号遵循语义化版本格式。
 
 ## [Unreleased]

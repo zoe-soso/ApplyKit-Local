@@ -31,7 +31,7 @@ test.afterAll(async () => {
   await context?.close();
 });
 
-test('E08 地址不混填、教育日期按约定补全、声明与附件保持待处理', async () => {
+test('E08 地址不混填、日期精度不足保留待补、声明与附件保持待处理', async () => {
   const tab = await findDemoTab(appPage, 'edge-cases.html');
   const { snapshot } = await runFill(appPage, tab.tabId, profileVersionId);
 
@@ -39,12 +39,13 @@ test('E08 地址不混填、教育日期按约定补全、声明与附件保持�
   await expect(demoPage.locator('#current-address')).toHaveValue('杭州');
   await expect(demoPage.locator('#registered-address')).toHaveValue('');
   await expect(demoPage.locator('#edu-address')).toHaveValue('');
-  expect(outcomeOf(snapshot, '户籍地').reasonCode).toBe('NO_MATCH');
+  expect(outcomeOf(snapshot, '户籍地').reasonCode).toBe('REQUIRES_USER_ACTION');
+  expect(snapshot.report.fields.find(f=>f.label==='户籍地')).toMatchObject({diagnosticCode:'SENSITIVE_CONFIRMATION'});
   expect(outcomeOf(snapshot, '学校地址').reasonCode).toBe('NO_MATCH');
 
-  // 教育毕业日期只有年月时，按用户约定补为 6 月 30 日。
-  expect(outcomeOf(snapshot, '毕业时间')).toEqual({ outcome: 'filled', reasonCode: 'FILLED_VERIFIED' });
-  await expect(demoPage.locator('#edu-graduation')).toHaveValue('2027-06-30');
+  // 教育毕业日期只有年月，网页要求日时不能猜测。
+  expect(outcomeOf(snapshot, '毕业时间')).toEqual({ outcome: 'pending', reasonCode: 'PRECISION_MISMATCH' });
+  await expect(demoPage.locator('#edu-graduation')).toHaveValue('');
 
   // 声明、附件、iframe 与无语义控件都不被操作。
   for (const label of ['我声明以上信息真实有效', '简历附件', '内嵌问卷', '自定义评分控件']) {

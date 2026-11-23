@@ -7,6 +7,8 @@ import * as esbuild from 'esbuild';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export async function cleanDir(dir) {
+  const allowed = new Set(['dist', '.test-dist', '.diagnose'].map(name => path.resolve(ROOT, name)));
+  if (!allowed.has(path.resolve(dir))) throw new Error('拒绝清理预期构建目录以外的路径');
   await rm(dir, { recursive: true, force: true });
   await mkdir(dir, { recursive: true });
 }

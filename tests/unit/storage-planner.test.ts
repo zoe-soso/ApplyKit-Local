@@ -177,7 +177,8 @@ describe('计划生成', () => {
     const diagnostics = ['教育经历尚未展开字段，请先在网页添加经历，再重新扫描；本轮未自动点击添加。'];
     const scan = scanResultSchema.parse(scanOf([], { diagnostics }));
     const plan = planRun({ scan, profile: demoProfile, rules: [] });
-    expect(plan.recordBindingNotes).toEqual(diagnostics);
+    expect(plan.recordBindingNotes).toEqual(expect.arrayContaining(diagnostics));
+    expect(plan.recordBindingNotes.some(note=>note.includes('独立项目栏'))).toBe(false);
     expect(plan.actions).toEqual([]);
     expect(plan.addRequests).toEqual([]);
     expect(scanResultSchema.safeParse(scanOf([])).success).toBe(true);

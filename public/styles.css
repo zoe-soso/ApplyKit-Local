@@ -140,3 +140,5 @@ textarea { width: 100%; resize: vertical; }
 .toast { background: #10233f; color: #fff; padding: 8px 12px; border-radius: 6px; max-width: 320px; font-size: 13px; }
 .toast-error { background: var(--error); }
 .toast-success { background: var(--success); }
+
+.diagnostic-items{max-height:320px;overflow:auto;line-height:1.8;padding-left:22px}.diagnostic-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;font-size:12px}.field-next-step{color:#476a58;margin:8px 0;font-size:13px}.diagnostic-summary details{margin-top:14px}
